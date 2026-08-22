@@ -9,27 +9,27 @@ import {
 } from "react";
 import type { Company } from "@/lib/companies";
 import type { ResearchTab } from "@/lib/research-contracts";
-import { companyFromFormData } from "../features/research/data/company-repository";
+import { companyFromFormData } from "./data/company-repository";
 import {
   CompanyHeader,
   MobileAppbar,
   ResearchTabs,
   Watchlist,
-} from "../features/research/components/research-navigation";
-import { OverviewPanel } from "../features/research/components/overview-panel";
-import { ValuationPanel } from "../features/research/components/valuation-panel";
-import { FilingsPanel } from "../features/research/components/filings-panel";
-import { IrPanel } from "../features/research/components/ir-panel";
+} from "./components/research-navigation";
+import { OverviewPanel } from "./components/overview-panel";
+import { ValuationPanel } from "./components/valuation-panel";
+import { FilingsPanel } from "./components/filings-panel";
+import { IrPanel } from "./components/ir-panel";
 import {
   AddCompanyDialog,
   MetricDialog,
   TickerPickerDialog,
-} from "../features/research/components/research-dialogs";
-import { useCompanies } from "../features/research/hooks/use-companies";
-import { useOverlayFocus } from "../features/research/hooks/use-overlay-focus";
-import { useSecFilings } from "../features/research/hooks/use-sec-filings";
-import { useIrDocuments } from "../features/research/hooks/use-ir-documents";
-import { MobileBottomNavigation } from "./app-navigation";
+} from "./components/research-dialogs";
+import { useCompanies } from "./hooks/use-companies";
+import { useOverlayFocus } from "./hooks/use-overlay-focus";
+import { useSecFilings } from "./hooks/use-sec-filings";
+import { useIrDocuments } from "./hooks/use-ir-documents";
+import { MobileBottomNavigation } from "../../components/app-navigation";
 
 export default function ResearchDesk({ initialCompanies }: { initialCompanies: Company[] }) {
   const { companies, saveCustomCompany } = useCompanies(initialCompanies);

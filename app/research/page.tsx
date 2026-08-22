@@ -1,4 +1,4 @@
-import ResearchDesk from "../components/research-desk";
+import ResearchDesk from "../features/research/research-desk";
 import { starterCompanies, type Company } from "@/lib/companies";
 import { listCompanies } from "@/lib/server/company-service";
 import { attachSeedResearch } from "@/lib/server/company-research-seed";

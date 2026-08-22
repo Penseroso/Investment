@@ -1,14 +1,14 @@
 # Product
 
-<!-- impeccable:product-schema 1 -->
-
 ## Platform
 
 web
 
 ## Stack
 
-Delegated: OpenAI Sites with the Vinext React starter. The product is mobile-responsive and owner-focused.
+Vinext and React on Cloudflare Workers, with Cloudflare D1 for persistence. The product is mobile-responsive and owner-focused.
+
+Document status: current implementation and explicitly labeled planned work, reviewed 2026-08-22.
 
 ## Users
 
@@ -30,7 +30,7 @@ The initial watchlist contains CEG, COHR, and TSM. Official filings and IR pages
 
 - Persisted SEC filing collection for configured issuers, with six-hour read-through freshness and manual refresh
 - Persisted official IR releases, presentations and results with company-specific adapters and source-health history
-- Weekly persisted US macro, FOMC, Jackson Hole, and watchlist earnings calendar shown in Korea time
+- Persisted US macro, FOMC, Jackson Hole, and watchlist earnings calendar shown in Korea time, refreshed on demand with a seven-day read-through threshold
 - Weekly timeline and monthly calendar views, with US pre-market and after-market labels
 - Separate EPS and revenue beat, in-line, and miss labels when actual and consensus values are available
 - Company-specific valuation indicators, monitoring rationale, definitions, and formulas
@@ -38,7 +38,7 @@ The initial watchlist contains CEG, COHR, and TSM. Official filings and IR pages
 - Cross-device custom ticker additions backed by the site database
 - No live price target, portfolio accounting, or buy and sell model
 - Automated Korean summaries and valuation-impact labels for calendar and company research are deferred until source ingestion is stable
-- Post-release earnings results are designed for an event-time-plus-three-hours job, separate from weekly schedule collection and future daily price collection
+- Planned: post-release earnings results will use an event-time-plus-three-hours job with bounded retries; this scheduler is not implemented yet
 - Daily market-risk collection covers exactly five signals: FRED/ICE BofA HY OAS, New York Fed SOFR minus FRED IORB, FRED `WRESBAL` four-week change, VIX/VIX3M, and OFR FSI confirmation. MOVE is excluded until a stable licensed source is available.
 - A daily Worker job runs at 22:15 UTC (07:15 KST); a twenty-hour read-through check recovers missed runs, and failed sources have a one-hour read-through cooldown.
 - D1 retains normalized signal snapshots, collection runs, and deterministic Korean daily reports. Reports provide per-signal normal/watch/warning/stress labels and an in-app unread indicator; no buy or sell recommendation.

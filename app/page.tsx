@@ -6,14 +6,6 @@ import {
   listCalendarEvents,
 } from "@/lib/server/calendar-service";
 
-/*
-THESIS: Time is the primary market coordinate; refuse a widget dashboard and make one legible calendar surface.
-OWN-WORLD: Near-black canvas, cobalt selection, thin graphite rules, tabular time, and compact evidence rows.
-STORY: Scan the week in Korea time, switch to a month, isolate event classes, and verify the official source.
-FIRST VIEWPORT: Date navigation and view controls lead directly into a seven-day Korea-time event timeline.
-FORM: Operate mode, established-world extension, code-first calendar ledger.
-FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, and DESIGN.md
-*/
 export const dynamic = "force-dynamic";
 
 export default async function Home() {

@@ -1,5 +1,7 @@
 # Research Workspace Architecture
 
+Document status: current architecture and explicitly labeled planned work, reviewed 2026-08-22.
+
 ## Current boundary
 
 Global navigation composes the calendar, market-risk, and research workspaces, while feature components own presentation and hooks own remote or persistent state. `CompanyRepository` isolates the research client from the company API implementation.
@@ -33,8 +35,11 @@ The frontend must not calculate valuation metrics or infer source impact.
 - Canonical metric definitions: label, definition, display formula, unit and version
 - Company metric configuration: selected metrics, ordering and `whyItMatters`
 - SEC and IR ingestion, normalization, deduplication and source health
+
+Planned backend ownership, not yet implemented:
+
 - Financial facts and valuation observations with period, currency and provenance
-- Event extraction and LLM analysis with evidence, prompt/model version and confidence
+- Event extraction and automated analysis with evidence, prompt/model version and confidence
 
 ## SEC ingestion
 
@@ -59,9 +64,11 @@ The root route is a global Korea-time calendar, independent from company researc
 - BLS supplies CPI, PPI, Employment Situation, JOLTS, and Employment Cost Index dates. When its ICS endpoint rejects the deployment network, a verified 2026 official-calendar snapshot keeps these dates available until the live endpoint recovers. Live and fallback rows share a release-name-and-date identity so recovery updates rather than duplicates an event.
 - BEA supplies GDP and Personal Income and Outlays release dates.
 - Federal Reserve and Kansas City Fed dates are maintained as verified official schedules for FOMC decisions and Jackson Hole.
-- Finnhub supplies watchlist-only earnings dates, market-session precision, EPS, and revenue observations. The API key exists only as a Sites secret.
+- Finnhub supplies watchlist-only earnings dates, market-session precision, EPS, and revenue observations. The API key is supplied through local environment variables during development and a Worker secret in hosted environments.
 
-`calendar_ingest_runs` records each provider attempt. Calendar collection is weekly because announced dates change infrequently. Earnings results use a separate event-driven policy: a scheduler selects a pending earnings row at its normalized pre-market or after-market time plus three hours, then refreshes that date once and stores EPS and revenue actuals. Missing results receive bounded retries. Daily previous-close price collection remains a separate future job for valuation calculations.
+`calendar_ingest_runs` records each provider attempt. Calendar collection is currently request-driven: an empty or older-than-seven-days range triggers read-through collection, while `POST` forces collection. There is no calendar cron yet.
+
+Planned: an event-driven scheduler will select a pending earnings row at its normalized pre-market or after-market time plus three hours, refresh that date, store EPS and revenue actuals, and apply bounded retries for missing results. Daily previous-close price collection is also future work for valuation calculations.
 
 ## Valuation calculation rule
 

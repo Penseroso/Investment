@@ -1,5 +1,7 @@
 # Design System
 
+Document status: current interface and explicitly labeled exclusions, reviewed 2026-08-22.
+
 ## Product Character
 
 Investment Signal Desk is a restrained personal research workspace, not a trading terminal. The interface prioritizes official evidence, compact reading, and fast source verification. Its visual language draws from modern market terminals and first-party research products without reproducing their layouts.
@@ -31,8 +33,8 @@ The root desktop viewport keeps global navigation on the left and the current ca
 - Valuation row: metric name and the company-specific reason for monitoring it
 - Metric dialog: definition, calculation, and interpretation in a plain text hierarchy
 - Filing row: form, filing date, description, and official SEC link
-- IR registry: official company link and future document feed
-- Add-ticker panel: device-local MVP registration with optional CIK and IR URL
+- IR registry: official company link and persisted document feed for supported company adapters
+- Add-ticker panel: D1-backed registration with optional CIK and IR URL; custom-company SEC and IR onboarding remains limited until a supported source configuration exists
 - Risk report header: one dated state, conclusion, summary, and manual refresh
 - Risk ledger: five flat rows for value, change, historical stress percentile, status, trend, observation date, and official source
 
