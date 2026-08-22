@@ -1,0 +1,45 @@
+CREATE TABLE `calendar_events` (
+	`id` text PRIMARY KEY NOT NULL,
+	`event_type` text NOT NULL,
+	`category` text NOT NULL,
+	`title` text NOT NULL,
+	`ticker` text,
+	`starts_at_utc` text NOT NULL,
+	`ends_at_utc` text,
+	`source_timezone` text DEFAULT 'UTC' NOT NULL,
+	`time_precision` text DEFAULT 'exact' NOT NULL,
+	`market_session` text DEFAULT 'unknown' NOT NULL,
+	`importance` text DEFAULT 'medium' NOT NULL,
+	`status` text DEFAULT 'scheduled' NOT NULL,
+	`actual` real,
+	`consensus` real,
+	`previous` real,
+	`unit` text,
+	`eps_actual` real,
+	`eps_consensus` real,
+	`revenue_actual` real,
+	`revenue_consensus` real,
+	`currency` text,
+	`fiscal_period` text,
+	`source_provider` text NOT NULL,
+	`source_event_id` text NOT NULL,
+	`source_url` text NOT NULL,
+	`source_priority` integer DEFAULT 50 NOT NULL,
+	`confirmed_at` text,
+	`discovered_at` text DEFAULT CURRENT_TIMESTAMP NOT NULL,
+	`updated_at` text DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+--> statement-breakpoint
+CREATE UNIQUE INDEX `calendar_events_source_identity` ON `calendar_events` (`source_provider`,`source_event_id`);--> statement-breakpoint
+CREATE TABLE `calendar_ingest_runs` (
+	`id` text PRIMARY KEY NOT NULL,
+	`source_provider` text NOT NULL,
+	`trigger` text NOT NULL,
+	`status` text NOT NULL,
+	`started_at` text NOT NULL,
+	`completed_at` text,
+	`events_seen` integer DEFAULT 0 NOT NULL,
+	`events_upserted` integer DEFAULT 0 NOT NULL,
+	`error_code` text,
+	`error_message` text
+);
