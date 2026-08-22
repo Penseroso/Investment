@@ -6,7 +6,6 @@ import {
   companyMetricConfigs,
   companyResearchPoints,
   companyResearchProfiles,
-  irSourceConfigs,
   metricDefinitions,
   researchSources,
 } from "@/db/schema";
@@ -17,8 +16,6 @@ import {
   genericMetrics,
   starterCompanies,
 } from "@/lib/companies";
-import { starterCompanyResearch } from "@/lib/server/company-research-seed";
-import { irSourceSeeds } from "@/lib/server/ir-adapters";
 
 const supportedCategories = new Set<MetricCategory>([
   "평가 배수",
@@ -26,215 +23,7 @@ const supportedCategories = new Set<MetricCategory>([
   "가치 동인",
 ]);
 
-function collectSeedMetrics() {
-  const metrics = [...starterCompanies.flatMap((company) => company.metrics), ...genericMetrics];
-  return [...new Map(metrics.map((metric) => [metric.code, metric])).values()];
-}
-
-async function seedCatalogIfEmpty() {
-  const db = await getDb();
-  const existing = await db.select({ ticker: companies.ticker }).from(companies).limit(1);
-  if (existing.length) return;
-
-  for (const metric of collectSeedMetrics()) {
-    await db
-      .insert(metricDefinitions)
-      .values({
-        code: metric.code,
-        label: metric.label,
-        category: metric.category,
-        definition: metric.definition,
-        formulaDisplay: metric.formulaDisplay ?? null,
-        interpretation: metric.interpretation,
-        calculationKey: metric.calculationKey ?? null,
-        definitionVersion: metric.definitionVersion ?? 1,
-      })
-      .onConflictDoNothing();
-  }
-
-  for (const [companyIndex, company] of starterCompanies.entries()) {
-    await db
-      .insert(companies)
-      .values({
-        ticker: company.ticker,
-        name: company.name,
-        market: company.market,
-        sector: company.sector,
-        summary: company.summary,
-        websiteUrl: company.websiteUrl,
-        cik: company.cik,
-        irUrl: company.irUrl,
-        filingForms: company.filingForms,
-        secEnabled: company.secEnabled,
-        sortOrder: companyIndex,
-      })
-      .onConflictDoNothing();
-
-    for (const [metricIndex, metric] of company.metrics.entries()) {
-      await db
-        .insert(companyMetricConfigs)
-        .values({
-          companyTicker: company.ticker,
-          metricCode: metric.code,
-          whyItMatters: metric.whyItMatters,
-          displayOrder: metricIndex,
-          enabled: true,
-        })
-        .onConflictDoNothing();
-    }
-  }
-}
-
-async function ensureResearchSeeded() {
-  const db = await getDb();
-  const existing = await db
-    .select({
-      ticker: companyResearchProfiles.companyTicker,
-      asOfDate: companyResearchProfiles.asOfDate,
-    })
-    .from(companyResearchProfiles);
-  const existingVersions = new Map(existing.map((item) => [item.ticker, item.asOfDate]));
-
-  for (const [ticker, research] of Object.entries(starterCompanyResearch)) {
-    if (existingVersions.get(ticker) === research.asOfDate) continue;
-    const companySeed = starterCompanies.find((company) => company.ticker === ticker);
-    if (companySeed) {
-      await db
-        .update(companies)
-        .set({ summary: companySeed.summary, updatedAt: new Date().toISOString() })
-        .where(eq(companies.ticker, ticker));
-    }
-
-    for (const source of research.sources) {
-      await db
-        .insert(researchSources)
-        .values({
-          id: source.id,
-          companyTicker: ticker,
-          sourceType: source.sourceType,
-          title: source.title,
-          url: source.url,
-          publishedAt: source.publishedAt,
-        })
-        .onConflictDoUpdate({
-          target: researchSources.id,
-          set: {
-            sourceType: source.sourceType,
-            title: source.title,
-            url: source.url,
-            publishedAt: source.publishedAt,
-          },
-        });
-    }
-
-    await db
-      .insert(companyResearchProfiles)
-      .values({
-        companyTicker: ticker,
-        businessModel: research.businessModel,
-        revenueModel: research.revenueModel,
-        customerStructure: research.customerStructure,
-        costStructure: research.costStructure,
-        capitalIntensity: research.capitalIntensity,
-        asOfDate: research.asOfDate,
-        sourceIds: research.sources.map((source) => source.id),
-      })
-      .onConflictDoUpdate({
-        target: companyResearchProfiles.companyTicker,
-        set: {
-          businessModel: research.businessModel,
-          revenueModel: research.revenueModel,
-          customerStructure: research.customerStructure,
-          costStructure: research.costStructure,
-          capitalIntensity: research.capitalIntensity,
-          asOfDate: research.asOfDate,
-          sourceIds: research.sources.map((source) => source.id),
-          updatedAt: new Date().toISOString(),
-        },
-      });
-
-    for (const [index, line] of research.businessLines.entries()) {
-      await db
-        .insert(companyBusinessLines)
-        .values({
-          id: line.id,
-          companyTicker: ticker,
-          name: line.name,
-          description: line.description,
-          revenueRole: line.revenueRole,
-          endMarkets: line.endMarkets,
-          displayOrder: index,
-        })
-        .onConflictDoUpdate({
-          target: companyBusinessLines.id,
-          set: {
-            name: line.name,
-            description: line.description,
-            revenueRole: line.revenueRole,
-            endMarkets: line.endMarkets,
-            displayOrder: index,
-          },
-        });
-    }
-
-    for (const point of [...research.valueDrivers, ...research.risks]) {
-      const displayOrder =
-        point.kind === "value_driver"
-          ? research.valueDrivers.findIndex((item) => item.id === point.id)
-          : research.risks.findIndex((item) => item.id === point.id);
-      await db
-        .insert(companyResearchPoints)
-        .values({
-          id: point.id,
-          companyTicker: ticker,
-          kind: point.kind,
-          title: point.title,
-          description: point.description,
-          displayOrder,
-        })
-        .onConflictDoUpdate({
-          target: companyResearchPoints.id,
-          set: {
-            kind: point.kind,
-            title: point.title,
-            description: point.description,
-            displayOrder,
-          },
-        });
-    }
-  }
-}
-
-export async function ensureIrSourceConfigs() {
-  await seedCatalogIfEmpty();
-  const db = await getDb();
-  for (const seed of irSourceSeeds) {
-    await db
-      .insert(irSourceConfigs)
-      .values({
-        companyTicker: seed.ticker,
-        adapterKey: seed.adapterKey,
-        listingUrl: seed.listingUrl,
-        maxDocuments: seed.maxDocuments,
-        enabled: true,
-      })
-      .onConflictDoUpdate({
-        target: irSourceConfigs.companyTicker,
-        set: {
-          adapterKey: seed.adapterKey,
-          listingUrl: seed.listingUrl,
-          maxDocuments: seed.maxDocuments,
-          enabled: true,
-          updatedAt: new Date().toISOString(),
-        },
-      });
-  }
-}
-
 export async function listCompanies(): Promise<Company[]> {
-  await seedCatalogIfEmpty();
-  await ensureResearchSeeded();
-  await ensureIrSourceConfigs();
   const db = await getDb();
   const companyRows = await db
     .select()
@@ -367,7 +156,6 @@ export async function listCompanies(): Promise<Company[]> {
 }
 
 export async function getSecEnabledCompany(ticker: string) {
-  await seedCatalogIfEmpty();
   const db = await getDb();
   const rows = await db
     .select({
@@ -388,7 +176,6 @@ export async function getSecEnabledCompany(ticker: string) {
 }
 
 export async function getCompanyRecord(ticker: string) {
-  await seedCatalogIfEmpty();
   const db = await getDb();
   const rows = await db
     .select({
@@ -403,7 +190,6 @@ export async function getCompanyRecord(ticker: string) {
 }
 
 export async function saveCustomCompany(company: Company): Promise<Company[]> {
-  await seedCatalogIfEmpty();
   const db = await getDb();
   const existingStarter = starterCompanies.some((item) => item.ticker === company.ticker);
   if (existingStarter) return listCompanies();

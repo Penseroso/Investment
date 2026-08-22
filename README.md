@@ -81,8 +81,16 @@ implemented.
 - `npm run worker:types`: regenerate Cloudflare binding and runtime types
 - `npm test`: type-check, build, and run rendered and unit tests
 - `npm run db:generate`: generate Drizzle migrations after schema changes
-- `npx wrangler d1 migrations apply investment-signal-desk-db --local`: apply migrations to the local D1 database
+- `npm run db:seed:generate`: regenerate the checked-in starter seed after catalog changes
+- `npm run db:migrate:local`: apply migrations to the local D1 database
+- `npm run db:seed:local`: explicitly apply the starter catalog to the local D1 database
 - `npx wrangler d1 migrations apply investment-signal-desk-db --remote`: apply migrations to the bound remote D1 database
+- `npx wrangler d1 execute investment-signal-desk-db --remote --file db/seed.sql`: explicitly apply the starter catalog to the remote D1 database
+
+Database reads never seed or rewrite catalog data. For a new database, apply the
+baseline migration first and then apply `db/seed.sql`. The seed is generated
+from the checked-in company, research, IR-source, listing, and market-series
+catalogs and records its version and checksum in `seed_versions`.
 
 ## Learn More
 

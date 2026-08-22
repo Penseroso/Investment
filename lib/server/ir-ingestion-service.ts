@@ -2,10 +2,7 @@ import { and, desc, eq, inArray } from "drizzle-orm";
 import { getDb } from "@/db";
 import { ingestRuns, irDocuments, irSourceConfigs } from "@/db/schema";
 import type { IrDocument, IrPayload } from "@/lib/research-contracts";
-import {
-  ensureIrSourceConfigs,
-  getCompanyRecord,
-} from "@/lib/server/company-service";
+import { getCompanyRecord } from "@/lib/server/company-service";
 import {
   parseIrListing,
   type IrSourceSeed,
@@ -39,7 +36,6 @@ function documentId(ticker: string, url: string) {
 }
 
 async function getIrSource(ticker: string) {
-  await ensureIrSourceConfigs();
   const db = await getDb();
   const rows = await db
     .select()

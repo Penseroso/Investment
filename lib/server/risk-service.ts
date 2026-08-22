@@ -175,6 +175,7 @@ async function upsertSignal(result: RiskAdapterResult) {
       sourceUrl: signal.sourceUrl,
       dataFrequency: signal.dataFrequency,
       detail: signal.detail,
+      dataThroughDate: signal.asOfDate,
       calculatedAt: signal.calculatedAt,
     })
     .onConflictDoUpdate({
@@ -193,6 +194,7 @@ async function upsertSignal(result: RiskAdapterResult) {
         sourceUrl: signal.sourceUrl,
         dataFrequency: signal.dataFrequency,
         detail: signal.detail,
+        dataThroughDate: signal.asOfDate,
         calculatedAt: signal.calculatedAt,
       },
     });

@@ -6,6 +6,10 @@ Document status: current architecture and explicitly labeled planned work, revie
 
 Global navigation composes the calendar, market-risk, and research workspaces, while feature components own presentation and hooks own remote or persistent state. `CompanyRepository` isolates the research client from the company API implementation.
 
+The D1 schema starts from one pre-deployment baseline. Starter catalog data is a
+separate, explicitly applied, generated seed; ordinary reads do not mutate the
+database. `seed_versions` records the applied catalog version and checksum.
+
 ```text
 AppNavigation
 ├── CalendarWorkspace → /api/calendar → calendar ingestion service → D1
@@ -35,6 +39,8 @@ The frontend must not calculate valuation metrics or infer source impact.
 - Canonical metric definitions: label, definition, display formula, unit and version
 - Company metric configuration: selected metrics, ordering and `whyItMatters`
 - SEC and IR ingestion, normalization, deduplication and source health
+- Company listings separate issuer identity from exchange-specific tickers
+- The schema reserves source observations with observation dates, revision metadata and collection provenance; current risk adapters still calculate from fetched series in memory until raw-observation persistence is connected
 
 Planned backend ownership, not yet implemented:
 
@@ -46,6 +52,8 @@ Planned backend ownership, not yet implemented:
 `GET /api/filings?ticker=...` reads normalized documents from D1. An empty or older-than-six-hours collection triggers a read-through refresh from the SEC submissions API. `POST` on the same route performs an explicit refresh. Every attempt is recorded in `ingest_runs`; successful documents are upserted by SEC accession number in `filing_documents`.
 
 The allowed form set is applied before display limits, with a 20-document quota per form and an 80-document total. This prevents ownership filings from pushing a company's 10-K or 20-F out of the stored feed. D1 document upserts run as one batch. If an automatic refresh fails and stored documents exist, the API keeps serving the last successful collection. A failed manual refresh remains explicit to the client.
+
+The main submissions response is supplemented with up to four SEC-provided historical submission files. This covers issuers such as COHR and TSM whose current compact array has reached 1,000 filings. Stored filing provenance includes the source submission file, Act, file and film numbers, item list, byte size, and XBRL flags.
 
 ## IR ingestion
 

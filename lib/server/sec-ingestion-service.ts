@@ -23,7 +23,16 @@ type SecRecent = {
   filingDate: string[];
   reportDate: string[];
   acceptanceDateTime?: string[];
+  act?: string[];
   form: string[];
+  fileNumber?: string[];
+  filmNumber?: string[];
+  items?: string[];
+  core_type?: string[];
+  size?: number[];
+  isXBRL?: number[];
+  isInlineXBRL?: number[];
+  isXBRLNumeric?: number[];
   primaryDocument: string[];
   primaryDocDescription?: string[];
 };
@@ -31,8 +40,18 @@ type SecRecent = {
 type SecSubmission = {
   cik: string;
   name: string;
-  filings: { recent: SecRecent };
+  filings: {
+    recent: SecRecent;
+    files?: Array<{
+      name: string;
+      filingCount: number;
+      filingFrom: string;
+      filingTo: string;
+    }>;
+  };
 };
+
+type SecRecentBatch = { recent: SecRecent; submissionFile: string | null };
 
 type IngestTrigger = "read_through" | "manual";
 
@@ -51,22 +70,36 @@ function isStale(completedAt: string | null) {
   return !Number.isFinite(completedTime) || Date.now() - completedTime > STALE_AFTER_MS;
 }
 
-function normalizeSubmission(submission: SecSubmission, company: SecCompany) {
-  const recent = submission.filings.recent;
+export function normalizeSubmission(
+  submissionName: string,
+  batches: SecRecentBatch[],
+  company: SecCompany,
+) {
   const allowedForms = new Set(company.filingForms);
   const cikCompact = String(Number(company.cik));
   const formCounts = new Map<string, number>();
 
-  return recent.form
-    .map((form, index) => ({ form, index }))
+  return batches
+    .flatMap(({ recent, submissionFile }) =>
+      recent.form.map((form, index) => ({ form, index, recent, submissionFile })),
+    )
     .filter(({ form }) => allowedForms.has(form))
+    .sort(
+      (left, right) =>
+        right.recent.filingDate[right.index].localeCompare(
+          left.recent.filingDate[left.index],
+        ) ||
+        (right.recent.acceptanceDateTime?.[right.index] ?? "").localeCompare(
+          left.recent.acceptanceDateTime?.[left.index] ?? "",
+        ),
+    )
     .filter(({ form }) => {
       const nextCount = (formCounts.get(form) ?? 0) + 1;
       formCounts.set(form, nextCount);
       return nextCount <= MAX_FILINGS_PER_FORM;
     })
     .slice(0, MAX_STORED_FILINGS)
-    .map(({ form, index }) => {
+    .map(({ form, index, recent, submissionFile }) => {
       const accession = recent.accessionNumber[index];
       const primaryDocument = recent.primaryDocument[index];
       const accessionCompact = accession.replaceAll("-", "");
@@ -78,11 +111,27 @@ function normalizeSubmission(submission: SecSubmission, company: SecCompany) {
         filingDate: recent.filingDate[index],
         reportDate: recent.reportDate[index] || null,
         acceptedAt: recent.acceptanceDateTime?.[index] || null,
+        act: recent.act?.[index] || null,
+        fileNumber: recent.fileNumber?.[index] || null,
+        filmNumber: recent.filmNumber?.[index] || null,
+        items: (recent.items?.[index] ?? "")
+          .split(",")
+          .map((item) => item.trim())
+          .filter(Boolean),
+        sizeBytes: recent.size?.[index] ?? null,
+        isXbrl: recent.isXBRL?.[index] === 1,
+        isInlineXbrl: recent.isInlineXBRL?.[index] === 1,
         title:
           recent.primaryDocDescription?.[index] ||
-          `${form} filing for ${submission.name}`,
+          `${form} filing for ${submissionName}`,
         primaryDocument,
+        primaryDocumentDescription: recent.primaryDocDescription?.[index] || null,
         url: `https://www.sec.gov/Archives/edgar/data/${cikCompact}/${accessionCompact}/${primaryDocument}`,
+        submissionFile,
+        sourceMetadata: {
+          coreType: recent.core_type?.[index] || null,
+          isXbrlNumeric: recent.isXBRLNumeric?.[index] === 1,
+        },
       };
     });
 }
@@ -179,7 +228,38 @@ async function ingestSecFilings(company: SecCompany, trigger: IngestTrigger) {
     }
 
     const submission = (await response.json()) as SecSubmission;
-    const documents = normalizeSubmission(submission, company);
+    const historicalResults = await Promise.allSettled(
+      (submission.filings.files ?? []).slice(0, 4).map(async (file) => {
+        const historicalResponse = await fetch(
+          `https://data.sec.gov/submissions/${file.name}`,
+          {
+            headers: {
+              Accept: "application/json",
+              "User-Agent": secUserAgent(),
+            },
+            signal: AbortSignal.timeout(15_000),
+          },
+        );
+        if (!historicalResponse.ok) {
+          throw new Error(`SEC history returned ${historicalResponse.status}`);
+        }
+        return {
+          recent: (await historicalResponse.json()) as SecRecent,
+          submissionFile: file.name,
+        } satisfies SecRecentBatch;
+      }),
+    );
+    const historicalBatches = historicalResults.flatMap((result) =>
+      result.status === "fulfilled" ? [result.value] : [],
+    );
+    const documents = normalizeSubmission(
+      submission.name,
+      [
+        { recent: submission.filings.recent, submissionFile: null },
+        ...historicalBatches,
+      ],
+      company,
+    );
     const existing = documents.length
       ? await db
           .select({ accession: filingDocuments.accession })
@@ -200,9 +280,19 @@ async function ingestSecFilings(company: SecCompany, trigger: IngestTrigger) {
             filingDate: document.filingDate,
             reportDate: document.reportDate,
             acceptedAt: document.acceptedAt,
+            act: document.act,
+            fileNumber: document.fileNumber,
+            filmNumber: document.filmNumber,
+            items: document.items,
+            sizeBytes: document.sizeBytes,
+            isXbrl: document.isXbrl,
+            isInlineXbrl: document.isInlineXbrl,
             title: document.title,
             primaryDocument: document.primaryDocument,
+            primaryDocumentDescription: document.primaryDocumentDescription,
             url: document.url,
+            submissionFile: document.submissionFile,
+            sourceMetadata: document.sourceMetadata,
             lastSeenAt,
           },
         }),
@@ -223,6 +313,8 @@ async function ingestSecFilings(company: SecCompany, trigger: IngestTrigger) {
         documentsInserted: documents.filter(
           (document) => !existingAccessions.has(document.accession),
         ).length,
+        responseUpdatedAt: response.headers.get("last-modified"),
+        httpStatus: response.status,
       })
       .where(eq(ingestRuns.id, runId));
     return completedAt;
