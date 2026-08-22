@@ -233,7 +233,7 @@ async function upsertReport(signals: RiskSignal[], now = new Date()) {
   return next;
 }
 
-async function runRefresh(trigger: RefreshTrigger) {
+async function runRefresh(trigger: RefreshTrigger): Promise<RiskSourceState[]> {
   const states: RiskSourceState[] = [];
   await Promise.all(
     riskAdapters.map(async (adapter, index) => {
@@ -258,18 +258,19 @@ async function runRefresh(trigger: RefreshTrigger) {
   return riskSignalOrder.map((key) =>
     states.find((state) => state.provider === providerBySignal[key]) ?? {
       provider: providerBySignal[key],
-      status: "unavailable",
+      status: "unavailable" as const,
     },
   );
 }
 
 export async function refreshRisk(trigger: RefreshTrigger) {
   if (activeRefresh) return activeRefresh;
-  activeRefresh = runRefresh(trigger);
+  const refresh = runRefresh(trigger);
+  activeRefresh = refresh;
   try {
-    return await activeRefresh;
+    return await refresh;
   } finally {
-    activeRefresh = null;
+    if (activeRefresh === refresh) activeRefresh = null;
   }
 }
 

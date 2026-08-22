@@ -25,12 +25,18 @@ function dateOnly(date: Date) {
   return date.toISOString().slice(0, 10);
 }
 
+function parseDateOnly(value: string, endOfDay = false) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+  const date = new Date(`${value}T${endOfDay ? "23:59:59.999" : "00:00:00.000"}Z`);
+  return Number.isNaN(date.getTime()) || dateOnly(date) !== value ? null : date;
+}
+
 function rangeBounds(from: string, to: string) {
-  const fromDate = new Date(`${from}T00:00:00.000Z`);
-  const toDate = new Date(`${to}T23:59:59.999Z`);
+  const fromDate = parseDateOnly(from);
+  const toDate = parseDateOnly(to, true);
   if (
-    Number.isNaN(fromDate.getTime()) ||
-    Number.isNaN(toDate.getTime()) ||
+    !fromDate ||
+    !toDate ||
     toDate < fromDate ||
     toDate.getTime() - fromDate.getTime() > 370 * DAY_MS
   ) {

@@ -18,8 +18,10 @@ let statusFetchedAt = 0;
 function loadUnread(revalidate = false) {
   if (revalidate && Date.now() - statusFetchedAt > 30_000) statusRequest = null;
   statusRequest ??= fetch("/api/risk?mode=status", { cache: "no-store" })
-    .then((response) => response.ok ? response.json() : { unread: false })
-    .then((payload: { unread?: boolean }) => {
+    .then(async (response): Promise<{ unread?: boolean }> =>
+      response.ok ? (await response.json()) as { unread?: boolean } : { unread: false },
+    )
+    .then((payload) => {
       statusFetchedAt = Date.now();
       return Boolean(payload.unread);
     })

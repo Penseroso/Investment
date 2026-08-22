@@ -1,12 +1,12 @@
 import ResearchDesk from "../components/research-desk";
-import { starterCompanies } from "@/lib/companies";
+import { starterCompanies, type Company } from "@/lib/companies";
 import { listCompanies } from "@/lib/server/company-service";
 import { attachSeedResearch } from "@/lib/server/company-research-seed";
 
 export const dynamic = "force-dynamic";
 
 export default async function ResearchPage() {
-  let companies = attachSeedResearch(starterCompanies);
+  let companies: Company[] = attachSeedResearch(starterCompanies);
   try {
     companies = await listCompanies();
   } catch {

@@ -2,6 +2,10 @@ import {
   defaultCalendarRange,
   listCalendarEvents,
 } from "@/lib/server/calendar-service";
+import {
+  requireSameOrigin,
+  requestValidationResponse,
+} from "@/lib/server/request-security";
 
 function rangeFromRequest(request: Request) {
   const url = new URL(request.url);
@@ -38,12 +42,15 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    requireSameOrigin(request);
     const range = rangeFromRequest(request);
     return Response.json(
       await listCalendarEvents({ ...range, forceRefresh: true }),
       { headers: { "Cache-Control": "private, no-store" } },
     );
   } catch (error) {
+    const validationResponse = requestValidationResponse(error);
+    if (validationResponse) return validationResponse;
     return errorResponse(error);
   }
 }

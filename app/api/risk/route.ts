@@ -3,6 +3,10 @@ import {
   markRiskReportRead,
   riskStatus,
 } from "@/lib/server/risk-service";
+import {
+  readJsonBody,
+  requestValidationResponse,
+} from "@/lib/server/request-security";
 
 const headers = { "Cache-Control": "private, no-store" };
 
@@ -22,7 +26,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const body = (await request.json()) as { action?: string; reportDate?: string };
+    const body = await readJsonBody<{ action?: string; reportDate?: string }>(request);
     if (body.action === "read" && body.reportDate) {
       return Response.json(await markRiskReportRead(body.reportDate), { headers });
     }
@@ -30,7 +34,9 @@ export async function POST(request: Request) {
       return Response.json(await listRisk({ forceRefresh: true }), { headers });
     }
     return Response.json({ error: "지원하지 않는 요청입니다." }, { status: 400, headers });
-  } catch {
+  } catch (error) {
+    const validationResponse = requestValidationResponse(error);
+    if (validationResponse) return validationResponse;
     return Response.json({ error: "리스크 요청을 처리하지 못했습니다." }, { status: 500, headers });
   }
 }

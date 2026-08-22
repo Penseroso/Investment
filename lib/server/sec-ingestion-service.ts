@@ -159,6 +159,7 @@ async function ingestSecFilings(company: SecCompany, trigger: IngestTrigger) {
           Accept: "application/json",
           "User-Agent": "InvestmentSignalDesk/0.2 personal-research",
         },
+        signal: AbortSignal.timeout(15_000),
       },
     );
 

@@ -69,9 +69,11 @@ function anchorsFromHtml(html: string, baseUrl: string): Anchor[] {
     const text = plainText(match[3]);
     if (!text || /^(javascript:|mailto:|tel:|#)/i.test(match[2])) continue;
     try {
+      const url = new URL(decodeHtml(match[2]), baseUrl);
+      if (url.protocol !== "https:" && url.protocol !== "http:") continue;
       anchors.push({
         text,
-        url: new URL(decodeHtml(match[2]), baseUrl).toString(),
+        url: url.toString(),
         index: match.index ?? 0,
       });
     } catch {

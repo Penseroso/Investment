@@ -324,7 +324,7 @@ const fomcMeetings: FomcMeeting[] = [
 
 export function officialFedEvents(now = new Date()): CalendarEvent[] {
   const updatedAt = now.toISOString();
-  const meetings = fomcMeetings.map((meeting) => {
+  const meetings: CalendarEvent[] = fomcMeetings.map((meeting) => {
     const startsAtUtc = newYorkLocalToUtc(
       meeting.year,
       meeting.month,

@@ -1,5 +1,9 @@
 import type { Company } from "@/lib/companies";
 import { listCompanies, saveCustomCompany } from "@/lib/server/company-service";
+import {
+  readJsonBody,
+  requestValidationResponse,
+} from "@/lib/server/request-security";
 
 function errorResponse(error: unknown) {
   const message = error instanceof Error ? error.message : "Unexpected error";
@@ -18,9 +22,10 @@ function errorResponse(error: unknown) {
 
 function safeExternalUrl(value: string | undefined) {
   if (!value?.trim()) return "";
+  if (value.length > 2_048) return "";
   try {
     const url = new URL(value.trim());
-    return url.protocol === "https:" || url.protocol === "http:" ? url.href : "";
+    return url.protocol === "https:" ? url.href : "";
   } catch {
     return "";
   }
@@ -39,7 +44,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const payload = (await request.json()) as Partial<Company>;
+    const payload = await readJsonBody<Partial<Company>>(request);
     const ticker = payload.ticker?.trim().toUpperCase() ?? "";
     const name = payload.name?.trim().slice(0, 120) ?? "";
     if (!/^[A-Z0-9.-]{1,8}$/.test(ticker) || !name) {
@@ -66,6 +71,8 @@ export async function POST(request: Request) {
       { status: 201 },
     );
   } catch (error) {
+    const validationResponse = requestValidationResponse(error);
+    if (validationResponse) return validationResponse;
     return errorResponse(error);
   }
 }

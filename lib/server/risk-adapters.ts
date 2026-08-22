@@ -86,6 +86,7 @@ export function parseOfrCsv(csv: string): RiskPoint[] {
 async function textResponse(url: string) {
   const response = await fetch(url, {
     headers: { Accept: "text/csv,text/plain;q=0.9,*/*;q=0.5" },
+    signal: AbortSignal.timeout(15_000),
   });
   if (!response.ok) throw new Error(`HTTP ${response.status}`);
   return response.text();
@@ -109,7 +110,10 @@ async function fetchSofr(now: Date) {
   url.searchParams.set("startDate", startDate(now));
   url.searchParams.set("endDate", now.toISOString().slice(0, 10));
   url.searchParams.set("type", "rate");
-  const response = await fetch(url, { headers: { Accept: "application/json" } });
+  const response = await fetch(url, {
+    headers: { Accept: "application/json" },
+    signal: AbortSignal.timeout(15_000),
+  });
   if (!response.ok) throw new Error(`HTTP ${response.status}`);
   return parseNyFedSofr(await response.json());
 }
