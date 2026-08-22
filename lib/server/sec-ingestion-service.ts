@@ -8,6 +8,14 @@ const MAX_STORED_FILINGS = 80;
 const MAX_FILINGS_PER_FORM = 20;
 const STALE_AFTER_MS = 6 * 60 * 60 * 1000;
 
+function secUserAgent() {
+  const contactName = process.env.SEC_CONTACT_NAME?.trim();
+  const contactEmail = process.env.SEC_CONTACT_EMAIL?.trim();
+  return ["InvestmentSignalDesk/1.0", contactName, contactEmail]
+    .filter(Boolean)
+    .join(" ");
+}
+
 type SecCompany = NonNullable<Awaited<ReturnType<typeof getSecEnabledCompany>>>;
 
 type SecRecent = {
@@ -157,7 +165,7 @@ async function ingestSecFilings(company: SecCompany, trigger: IngestTrigger) {
       {
         headers: {
           Accept: "application/json",
-          "User-Agent": "InvestmentSignalDesk/0.2 personal-research",
+          "User-Agent": secUserAgent(),
         },
         signal: AbortSignal.timeout(15_000),
       },

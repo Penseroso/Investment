@@ -37,13 +37,38 @@ The `/risk` workspace stores its state in D1: normalized signal snapshots, inges
 
 The Worker collects daily; a twenty-hour read-through refresh recovers missed collection and each failed source is subject to a one-hour read-through cooldown. OFR FSI is a confirmation signal, not an equal-weighted fifth vote, because of overlap with the four independent signals. The application exposes unread reports with an in-app badge that revalidates on focus and every fifteen minutes. External push delivery is deferred.
 
+## Local secrets
+
+Copy `.dev.vars.example` to `.dev.vars`, then replace the placeholders with the
+Finnhub API key and SEC contact identity. `.dev.vars` is ignored by Git and is
+loaded by the Cloudflare Vite plugin during `npm run dev`.
+
+```powershell
+Copy-Item .dev.vars.example .dev.vars
+```
+
+```dotenv
+FINNHUB_API_KEY="your-real-key"
+SEC_CONTACT_NAME="Your Name"
+SEC_CONTACT_EMAIL="your-contact@example.com"
+```
+
+The SEC contact values identify this application's automated EDGAR requests.
+For a deployed Worker, store all three values outside the repository:
+
+```powershell
+npx wrangler secret put FINNHUB_API_KEY
+npx wrangler secret put SEC_CONTACT_NAME
+npx wrangler secret put SEC_CONTACT_EMAIL
+```
+
+Never add the real values to `wrangler.jsonc` or another committed file.
+
 ## Authentication boundary
 
-The OpenAI Sites identity headers and `app/chatgpt-auth.ts` are legacy export
-artifacts. They are not an authentication boundary when this repository is
-deployed directly to Cloudflare. Keep the Worker unreachable until a Cloudflare
-Access policy protects the entire Worker or an equivalent application-level
-authentication layer has been implemented.
+Keep the Worker unreachable until a Cloudflare Access policy protects the entire
+Worker or an equivalent application-level authentication layer has been
+implemented.
 
 ## Diagnostic Commands
 

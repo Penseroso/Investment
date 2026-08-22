@@ -1,0 +1,4 @@
+# Copy this file to .dev.vars and replace the placeholder.
+FINNHUB_API_KEY="replace-with-your-finnhub-api-key"
+SEC_CONTACT_NAME="Your Name"
+SEC_CONTACT_EMAIL="your-contact@example.com"

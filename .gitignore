@@ -29,6 +29,8 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+.dev.vars*
+!.dev.vars.example
 
 # vercel
 .vercel
@@ -38,7 +40,7 @@ next-env.d.ts
 *.tsbuildinfo
 /dist/
 /.wrangler/
-/.sites-runtime/
+/.vinext/
 /outputs/
 /work/
 /.impeccable/review/

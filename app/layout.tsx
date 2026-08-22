@@ -12,9 +12,6 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Investment Signal Desk",
   description: "공식 공시와 기업 IR을 한글로 정리하는 개인 투자 리서치 데스크",
-  other: {
-    "codex-preview": "development",
-  },
   icons: {
     icon: "/favicon.svg",
     shortcut: "/favicon.svg",
