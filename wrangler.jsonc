@@ -1,0 +1,18 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "investment-signal-desk",
+  "main": "./worker/index.ts",
+  "compatibility_date": "2026-05-15",
+  "compatibility_flags": ["nodejs_compat"],
+  "triggers": {
+    "crons": ["15 22 * * *"]
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "investment-signal-desk-db",
+      "database_id": "89538a21-635f-4596-8cf8-649b1d17a4ac",
+      "migrations_dir": "drizzle"
+    }
+  ]
+}
